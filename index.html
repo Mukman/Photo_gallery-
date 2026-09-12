@@ -1,0 +1,448 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Photo Album</title>
+<style>
+  :root {
+    --bg: #121110;
+    --panel: #1a1918;
+    --ink: #ece7e0;
+    --muted: #9a938a;
+    --line: #2c2a27;
+    --accent: #c9a15a;
+  }
+
+  * { box-sizing: border-box; }
+
+  html { scroll-behavior: smooth; }
+
+  body {
+    margin: 0;
+    background: var(--bg);
+    color: var(--ink);
+    font-family: 'Iowan Old Style', 'Palatino Linotype', Georgia, serif;
+    -webkit-font-smoothing: antialiased;
+    perspective: 1400px;
+  }
+
+  header {
+    padding: clamp(40px, 8vw, 64px) 24px clamp(28px, 5vw, 40px);
+    text-align: center;
+    border-bottom: 1px solid var(--line);
+  }
+
+  header h1 {
+    margin: 0;
+    font-size: clamp(26px, 6vw, 44px);
+    font-weight: 500;
+    letter-spacing: 0.01em;
+  }
+
+  header p {
+    margin: 12px 0 0;
+    color: var(--muted);
+    font-size: 14px;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  }
+
+  main {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: clamp(24px, 5vw, 40px) clamp(10px, 3vw, 16px) 80px;
+    perspective: 1000px;
+  }
+
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 4px;
+  }
+
+  @media (min-width: 600px) {
+    .grid { grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 6px; }
+  }
+
+  .frame {
+    position: relative;
+    aspect-ratio: 1 / 1;
+    overflow: hidden;
+    background: var(--panel);
+    cursor: pointer;
+    outline-offset: -2px;
+    transform-style: preserve-3d;
+    transition: transform 0.15s ease-out;
+    will-change: transform;
+  }
+
+  .frame:focus-visible {
+    outline: 2px solid var(--accent);
+  }
+
+  .frame img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    display: block;
+    transition: transform 0.4s ease;
+  }
+
+  .frame:hover img,
+  .frame:focus-visible img {
+    transform: scale(1.08) translateZ(20px);
+  }
+
+  footer {
+    text-align: center;
+    padding: 32px 16px 48px;
+    color: var(--muted);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+  }
+
+  /* Lightbox */
+  .lightbox {
+    position: fixed;
+    inset: 0;
+    background: rgba(9, 8, 7, 0.97);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 100;
+    touch-action: pan-y;
+  }
+
+  .lightbox.open {
+    display: flex;
+  }
+
+  .lightbox-stage {
+    position: relative;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+  }
+
+  .lightbox-track {
+    display: flex;
+    height: 100%;
+    will-change: transform;
+    transition: transform 0.35s cubic-bezier(0.22, 0.61, 0.36, 1);
+  }
+
+  .lightbox-slide {
+    flex: 0 0 100vw;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 24px;
+  }
+
+  .lightbox-slide img {
+    max-width: 100%;
+    max-height: 90vh;
+    object-fit: contain;
+    user-select: none;
+    -webkit-user-drag: none;
+  }
+
+  /* Fly-in transition ghost */
+  .fly-ghost {
+    position: fixed;
+    z-index: 200;
+    object-fit: cover;
+    pointer-events: none;
+    will-change: transform;
+    transform-style: preserve-3d;
+    transition: transform 0.6s cubic-bezier(0.16, 0.9, 0.3, 1), border-radius 0.6s ease;
+  }
+
+  .lightbox-close,
+  .lightbox-prev,
+  .lightbox-next {
+    position: absolute;
+    color: var(--ink);
+    background: rgba(255, 255, 255, 0.06);
+    border: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 101;
+    transition: background 0.2s ease;
+  }
+
+  .lightbox-close:hover,
+  .lightbox-prev:hover,
+  .lightbox-next:hover {
+    background: rgba(255, 255, 255, 0.14);
+  }
+
+  .lightbox-close {
+    top: 16px;
+    right: 16px;
+    width: 42px;
+    height: 42px;
+    border-radius: 50%;
+    font-size: 22px;
+    line-height: 1;
+  }
+
+  .lightbox-prev,
+  .lightbox-next {
+    top: 50%;
+    transform: translateY(-50%);
+    width: 46px;
+    height: 46px;
+    border-radius: 50%;
+    font-size: 20px;
+  }
+
+  .lightbox-prev { left: 12px; }
+  .lightbox-next { right: 12px; }
+
+  @media (max-width: 600px) {
+    .lightbox-prev, .lightbox-next { width: 38px; height: 38px; font-size: 16px; }
+  }
+
+  .lightbox-counter {
+    position: absolute;
+    bottom: 20px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+    font-size: 13px;
+    color: var(--muted);
+    letter-spacing: 0.05em;
+    z-index: 101;
+  }
+
+  @media (prefers-reduced-motion: reduce) {
+    .lightbox-track { transition: none; }
+    .frame img { transition: none; }
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Photo Album</h1>
+  <p>Scan. Look. Remember.</p>
+</header>
+
+<main>
+  <div class="grid" id="gallery"></div>
+</main>
+
+<footer>Tap any photo to view full size &middot; swipe or use arrow keys to browse</footer>
+
+<div class="lightbox" id="lightbox">
+  <div class="lightbox-stage">
+    <div class="lightbox-track" id="lightboxTrack"></div>
+    <button class="lightbox-close" id="lightboxClose" aria-label="Close">&times;</button>
+    <button class="lightbox-prev" id="lightboxPrev" aria-label="Previous photo">&#10094;</button>
+    <button class="lightbox-next" id="lightboxNext" aria-label="Next photo">&#10095;</button>
+    <div class="lightbox-counter" id="lightboxCounter"></div>
+  </div>
+</div>
+
+<script>
+  // List your photo filenames here, in order.
+  const photos = ['1.jpg', '2.jpg', '3.jpg', '4.jpg', '5.jpg', '6.jpg'];
+
+  const gallery = document.getElementById('gallery');
+  const lightbox = document.getElementById('lightbox');
+  const track = document.getElementById('lightboxTrack');
+  const counter = document.getElementById('lightboxCounter');
+  let current = 0;
+
+  // Build grid thumbnails
+  photos.forEach((src, i) => {
+    const frame = document.createElement('div');
+    frame.className = 'frame';
+    frame.tabIndex = 0;
+    frame.setAttribute('role', 'button');
+    frame.setAttribute('aria-label', `Open photo ${i + 1}`);
+    const img = document.createElement('img');
+    img.src = src;
+    img.loading = 'lazy';
+    img.alt = `Photo ${i + 1}`;
+    frame.appendChild(img);
+    frame.addEventListener('click', () => openLightbox(i, frame));
+    frame.addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); openLightbox(i, frame); }
+    });
+
+    // 3D tilt on pointer move (desktop hover + touch drag)
+    frame.addEventListener('pointermove', (e) => {
+      const r = frame.getBoundingClientRect();
+      const px = (e.clientX - r.left) / r.width;   // 0..1
+      const py = (e.clientY - r.top) / r.height;   // 0..1
+      const rotateY = (px - 0.5) * 18;   // left/right tilt
+      const rotateX = (0.5 - py) * 18;   // up/down tilt
+      frame.style.transform =
+        `rotateX(${rotateX}deg) rotateY(${rotateY}deg) scale(1.03)`;
+    });
+    frame.addEventListener('pointerleave', () => {
+      frame.style.transform = 'rotateX(0deg) rotateY(0deg) scale(1)';
+    });
+    gallery.appendChild(frame);
+  });
+
+  // Build lightbox slides
+  photos.forEach((src, i) => {
+    const slide = document.createElement('div');
+    slide.className = 'lightbox-slide';
+    const img = document.createElement('img');
+    img.src = src;
+    img.alt = `Photo ${i + 1}`;
+    slide.appendChild(img);
+    track.appendChild(slide);
+  });
+
+  function updateTrack(animate = true) {
+    track.style.transition = animate ? '' : 'none';
+    track.style.transform = `translateX(-${current * 100}vw)`;
+    counter.textContent = `${current + 1} / ${photos.length}`;
+    if (!animate) {
+      requestAnimationFrame(() => { track.style.transition = ''; });
+    }
+  }
+
+  function openLightbox(index, originEl) {
+    current = index;
+    updateTrack(false);
+
+    const finish = () => {
+      lightbox.classList.add('open');
+      document.body.style.overflow = 'hidden';
+    };
+
+    if (!originEl || window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
+      finish();
+      return;
+    }
+
+    // Fly-in animation: clone the thumbnail image and animate it to the
+    // centered, full-size position, with a slight rotation for flair.
+    const rect = originEl.getBoundingClientRect();
+    const srcImg = originEl.querySelector('img');
+    const ghost = srcImg.cloneNode();
+    ghost.className = 'fly-ghost';
+    ghost.style.left = rect.left + 'px';
+    ghost.style.top = rect.top + 'px';
+    ghost.style.width = rect.width + 'px';
+    ghost.style.height = rect.height + 'px';
+    ghost.style.borderRadius = '0px';
+    // Start slightly tumbled in 3D space, as if lifting off the grid
+    ghost.style.transform = 'rotateY(-25deg) rotateX(12deg) rotateZ(-4deg) scale(1)';
+    document.body.appendChild(ghost);
+
+    // Compute a target size that roughly matches how the image will look
+    // centered in the viewport (contain-fit, generous margins).
+    const vw = window.innerWidth;
+    const vh = window.innerHeight;
+    const maxW = vw * 0.86;
+    const maxH = vh * 0.8;
+    const natRatio = srcImg.naturalWidth && srcImg.naturalHeight
+      ? srcImg.naturalWidth / srcImg.naturalHeight
+      : rect.width / rect.height;
+    let targetW = maxW;
+    let targetH = targetW / natRatio;
+    if (targetH > maxH) {
+      targetH = maxH;
+      targetW = targetH * natRatio;
+    }
+    const targetLeft = (vw - targetW) / 2;
+    const targetTop = (vh - targetH) / 2;
+
+    const dx = targetLeft - rect.left;
+    const dy = targetTop - rect.top;
+    const scaleX = targetW / rect.width;
+    const scaleY = targetH / rect.height;
+
+    requestAnimationFrame(() => {
+      ghost.style.transform =
+        `translate(${dx}px, ${dy}px) scale(${scaleX}, ${scaleY}) rotateY(0deg) rotateX(0deg) rotateZ(0deg)`;
+      ghost.style.borderRadius = '2px';
+    });
+
+    let done = false;
+    const cleanup = () => {
+      if (done) return;
+      done = true;
+      ghost.remove();
+      finish();
+    };
+    ghost.addEventListener('transitionend', cleanup);
+    setTimeout(cleanup, 650); // safety fallback
+  }
+
+  function closeLightbox() {
+    lightbox.classList.remove('open');
+    document.body.style.overflow = '';
+  }
+
+  function showNext() {
+    current = (current + 1) % photos.length;
+    updateTrack();
+  }
+
+  function showPrev() {
+    current = (current - 1 + photos.length) % photos.length;
+    updateTrack();
+  }
+
+  document.getElementById('lightboxClose').addEventListener('click', closeLightbox);
+  document.getElementById('lightboxNext').addEventListener('click', showNext);
+  document.getElementById('lightboxPrev').addEventListener('click', showPrev);
+
+  lightbox.addEventListener('click', (e) => {
+    if (e.target === lightbox || e.target.classList.contains('lightbox-stage')) {
+      closeLightbox();
+    }
+  });
+
+  document.addEventListener('keydown', (e) => {
+    if (!lightbox.classList.contains('open')) return;
+    if (e.key === 'Escape') closeLightbox();
+    if (e.key === 'ArrowRight') showNext();
+    if (e.key === 'ArrowLeft') showPrev();
+  });
+
+  // Swipe support
+  let touchStartX = 0;
+  let touchDeltaX = 0;
+
+  track.addEventListener('touchstart', (e) => {
+    touchStartX = e.touches[0].clientX;
+    track.style.transition = 'none';
+  }, { passive: true });
+
+  track.addEventListener('touchmove', (e) => {
+    touchDeltaX = e.touches[0].clientX - touchStartX;
+    track.style.transform = `translateX(calc(-${current * 100}vw + ${touchDeltaX}px))`;
+  }, { passive: true });
+
+  track.addEventListener('touchend', () => {
+    track.style.transition = '';
+    const threshold = window.innerWidth * 0.15;
+    if (touchDeltaX > threshold) {
+      showPrev();
+    } else if (touchDeltaX < -threshold) {
+      showNext();
+    } else {
+      updateTrack();
+    }
+    touchDeltaX = 0;
+  });
+
+  window.addEventListener('resize', () => updateTrack(false));
+</script>
+
+</body>
+</html>
