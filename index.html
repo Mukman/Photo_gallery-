@@ -76,20 +76,6 @@
     transform: scale(1.04);
   }
 
-  .placeholder {
-    width: 100%;
-    height: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--muted);
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
-    font-size: 13px;
-    background:
-      repeating-linear-gradient(45deg, #1e1d1b, #1e1d1b 10px, #1a1918 10px, #1a1918 20px);
-  }
-
-  /* Lightbox */
   .lightbox {
     position: fixed;
     inset: 0;
@@ -142,24 +128,23 @@
 
 <main>
   <div class="grid" id="gallery">
-    <!-- Replace each <img src="photos/1.jpg"> below with your real photo files -->
-    <div class="frame" onclick="openLightbox('photos/1.jpg')">
-      <div class="placeholder">photos/1.jpg</div>
+    <div class="frame" onclick="openLightbox('1.jpg')">
+      <img src="1.jpg" alt="Photo 1" loading="lazy">
     </div>
-    <div class="frame" onclick="openLightbox('photos/2.jpg')">
-      <div class="placeholder">photos/2.jpg</div>
+    <div class="frame" onclick="openLightbox('2.jpg')">
+      <img src="2.jpg" alt="Photo 2" loading="lazy">
     </div>
-    <div class="frame" onclick="openLightbox('photos/3.jpg')">
-      <div class="placeholder">photos/3.jpg</div>
+    <div class="frame" onclick="openLightbox('3.jpg')">
+      <img src="3.jpg" alt="Photo 3" loading="lazy">
     </div>
-    <div class="frame" onclick="openLightbox('photos/4.jpg')">
-      <div class="placeholder">photos/4.jpg</div>
+    <div class="frame" onclick="openLightbox('4.jpg')">
+      <img src="4.jpg" alt="Photo 4" loading="lazy">
     </div>
-    <div class="frame" onclick="openLightbox('photos/5.jpg')">
-      <div class="placeholder">photos/5.jpg</div>
+    <div class="frame" onclick="openLightbox('5.jpg')">
+      <img src="5.jpg" alt="Photo 5" loading="lazy">
     </div>
-    <div class="frame" onclick="openLightbox('photos/6.jpg')">
-      <div class="placeholder">photos/6.jpg</div>
+    <div class="frame" onclick="openLightbox('6.jpg')">
+      <img src="6.jpg" alt="Photo 6" loading="lazy">
     </div>
   </div>
 </main>
